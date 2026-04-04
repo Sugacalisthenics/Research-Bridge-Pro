@@ -13,27 +13,28 @@ from nltk.tokenize import word_tokenize, sent_tokenize
 import heapq
 import io
 
-# NLTK Data for AI Summary
-try:
-    nltk.data.find('tokenizers/punkt')
-except LookupError:
-    nltk.download('punkt')
-    nltk.download('stopwords')
+@st.cache_resource
+def download_nltk_data():
+    try:
+        nltk.data.find('tokenizers/punkt_tab')
+        nltk.data.find('corpora/stopwords')
+    except LookupError:
+        nltk.download('punkt', quiet=True)
+        nltk.download('punkt_tab', quiet=True)
+        nltk.download('stopwords', quiet=True)
 
-# Graphviz safe import
+download_nltk_data()
+
 try:
     import graphviz
     GRAPHVIZ_AVAILABLE = True
 except ImportError:
     GRAPHVIZ_AVAILABLE = False
 
-# --- PAGE CONFIG ---
 st.set_page_config(page_title="Suga's Research AI", layout="wide")
 
 st.title("🔬 Suga’s AI: The Research Bridge")
 st.markdown("### Connecting PhD Research to Young Minds 🎓")
-
-# --- UTILITY FUNCTIONS ---
 
 def extract_text_from_file(uploaded_file):
     file_extension = uploaded_file.name.split('.')[-1].lower()
@@ -78,7 +79,6 @@ def get_career_advice(q):
     if 'bio' in q or 'med' in q: return ["Organic Chemistry", "Biology", "Statistics", "Research Methods"]
     return ["Scientific Method", "Logic", "Mathematics", "Python"]
 
-# --- SIDEBAR SETTINGS ---
 st.sidebar.header("🔍 Global Search Settings")
 topics = ["Artificial Intelligence", "Astrophysics", "Bio-medical Engineering", "Black Holes", 
           "Climate Change", "Deep Learning", "Data Science", "Genetics", "Robotics", "--- TYPE MY OWN ---"]
@@ -86,15 +86,17 @@ topics = ["Artificial Intelligence", "Astrophysics", "Bio-medical Engineering", 
 selection = st.sidebar.selectbox("Choose a Field:", options=topics, index=None, placeholder="Search...")
 user_query = st.sidebar.text_input("Custom Topic:") if selection == "--- TYPE MY OWN ---" else (selection if selection else "Research")
 
-blob = TextBlob(user_query)
-query = str(blob.correct())
-if query.lower() != user_query.lower():
-    st.sidebar.warning(f"Searching for: **{query}**")
+if selection == "--- TYPE MY OWN ---":
+    blob = TextBlob(user_query)
+    query = str(blob.correct())
+    if query.lower() != user_query.lower():
+        st.sidebar.warning(f"Did you mean: **{query}**?")
+else:
+    query = user_query
 
 num_papers = st.sidebar.slider("Papers to analyze", 5, 20, 10)
 simplify = st.sidebar.toggle("Enable ELI15 Mode (Simple Language)")
 
-# --- MAIN TABS ---
 tab1, tab2 = st.tabs(["🌐 Global ArXiv Search", "📂 Personal Document Analysis"])
 
 with tab1:
